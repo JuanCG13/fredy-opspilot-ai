@@ -1,261 +1,195 @@
 "use client";
 
+import { useState } from "react";
 import {
   Activity,
-  AlertTriangle,
-  ArrowRight,
+  BarChart3,
+  Bell,
+  BookOpen,
   Bot,
-  CheckCircle2,
-  ClipboardCheck,
-  Code2,
+  ChevronDown,
+  ChevronRight,
+  CircleDot,
+  CreditCard,
   Database,
   FileText,
-  Gauge,
   GitBranch,
-  Layers3,
+  Headphones,
+  HelpCircle,
+  Inbox,
+  LayoutDashboard,
+  LineChart,
+  ListChecks,
+  Network,
   Play,
-  RefreshCw,
+  Plus,
+  Rocket,
   Search,
+  Send,
+  Server,
   Settings,
+  Shield,
   ShieldCheck,
-  Sparkles,
+  Terminal,
   Upload,
   Workflow,
-  XCircle,
+  Zap,
 } from "lucide-react";
-import { useMemo, useState } from "react";
 
-type View = "dashboard" | "run" | "approvals" | "docs" | "settings";
-type RunKey = "refund" | "lead" | "policy";
-
-type ApprovalState = "pending" | "approved" | "rejected";
+type RunKind = "refund" | "lead" | "policy";
+type Approval = "pending" | "approved" | "rejected";
 
 const templates = [
   {
-    key: "refund" as RunKey,
-    name: "Support Refund Triage",
-    type: "RAG + Approval",
-    trigger: "Customer asks for refund after 19 days on Pro plan",
-    outcome: "Classifies eligibility, retrieves refund policy, drafts response, queues approval.",
+    key: "refund" as RunKind,
+    tag: "LOGIC",
+    icon: "terminal",
+    title: "Support Refund Triage",
+    text: "Automatic categorization and processing of customer refund requests based on policy and history.",
   },
   {
-    key: "lead" as RunKey,
-    name: "Lead Qualification",
-    type: "Rules + AI Draft",
-    trigger: "Series A SaaS lead wants support and sales ops automation",
-    outcome: "Scores fit, explains qualification, proposes next task and email.",
+    key: "lead" as RunKind,
+    tag: "EXTRACTOR",
+    icon: "query_stats",
+    title: "Lead Qualification",
+    text: "Extracting intent and firmographics from inbound leads to score sales-fit instantly.",
   },
   {
-    key: "policy" as RunKey,
-    name: "Internal Policy Q&A",
-    type: "Grounded Q&A",
-    trigger: "What should support do for enterprise onboarding?",
-    outcome: "Answers with cited onboarding SOP and escalation snippets.",
+    key: "policy" as RunKind,
+    tag: "RAG",
+    icon: "menu_book",
+    title: "Internal Policy Q&A",
+    text: "Direct retrieval of compliance and onboarding snippets with source citations.",
   },
+];
+
+const runRows = [
+  ["2023-11-14 10:42:43", "Support Refund Triage", "SUCCESS", "1,249", "1.42s"],
+  ["2023-11-14 10:41:15", "Lead Qualification", "RUNNING", "---", "---"],
+  ["2023-11-14 10:38:02", "Internal Policy Q&A", "PENDING", "2,841", "0.8s"],
+  ["2023-11-14 10:42:13", "Legal Doc Extraction", "FAILED", "0", "12.3s"],
 ];
 
 const docs = [
-  {
-    title: "Refund Policy v2.1",
-    chunks: 32,
-    updated: "2h ago",
-    excerpt:
-      "Full refunds are normally available within 14 days. Pro plan exceptions may be prorated when a verified technical issue affected onboarding or activation.",
-  },
-  {
-    title: "Pricing Tiers 2024",
-    chunks: 28,
-    updated: "1d ago",
-    excerpt:
-      "Enterprise plans include dedicated onboarding, account management, custom SLA review, and quarterly success planning.",
-  },
-  {
-    title: "Onboarding SOP",
-    chunks: 41,
-    updated: "4h ago",
-    excerpt:
-      "For enterprise onboarding, create an implementation ticket, map CRM fields, schedule kickoff, and assign a technical owner.",
-  },
-  {
-    title: "Support Escalation Policy",
-    chunks: 21,
-    updated: "3d ago",
-    excerpt:
-      "L3 engineers must be notified if an incident remains unresolved for more than four business hours or blocks a paid account.",
-  },
-  {
-    title: "Lead Qualification Rules",
-    chunks: 37,
-    updated: "6h ago",
-    excerpt:
-      "High-fit leads have urgent workflow pain, 20+ employees, clear owner, current manual process, and budget for implementation.",
-  },
+  ["Refund Policy v2.1", "14-day window for full refunds; Pro plan prorated exceptions.", "32 chunks"],
+  ["Pricing Tiers 2024", "Enterprise onboarding, SLA review, account management.", "28 chunks"],
+  ["Onboarding SOP", "CRM mapping, kickoff scheduling, technical owner assignment.", "41 chunks"],
+  ["Lead Qualification Rules", "20+ employees, urgent workflow pain and budget signal.", "37 chunks"],
 ];
 
-const initialLogs = [
-  { id: "WR-7742", name: "Support Refund Triage", status: "Pending", tokens: "2,140", latency: "4.8s", time: "10:42:11" },
-  { id: "WR-7743", name: "Lead Qualification", status: "Success", tokens: "1,760", latency: "3.2s", time: "10:38:09" },
-  { id: "WR-7744", name: "Internal Policy Q&A", status: "Success", tokens: "1,118", latency: "2.1s", time: "10:31:44" },
-  { id: "WR-7738", name: "Support Escalation", status: "Failed", tokens: "904", latency: "1.7s", time: "09:58:21" },
-];
-
-const sources = [
-  {
-    title: "Refund Policy v2.1",
-    cite: "Section 2.1",
-    text: "Standard refund window for full refunds is restricted to 14 days after purchase or plan renewal.",
-  },
-  {
-    title: "Refund Policy v2.1",
-    cite: "Section 4.3",
-    text: "Pro plan requests outside 14 days may be escalated for prorated exception when technical activation issues are documented.",
-  },
-];
-
-export default function OpsPilotPortfolioDemo() {
-  const [view, setView] = useState<View>("dashboard");
-  const [activeRun, setActiveRun] = useState<RunKey>("refund");
-  const [approval, setApproval] = useState<ApprovalState>("pending");
-  const [draft, setDraft] = useState(
-    "Hi Alex — thanks for explaining the activation issue. Your request is outside the standard 14-day full-refund window, but based on the Pro plan exception policy we can offer a prorated refund for the unused period. I’ve escalated this for manager approval and will confirm the exact amount once approved."
-  );
-  const [events, setEvents] = useState([
-    "10:42:11 · Webhook intake received",
-    "10:42:13 · Retrieved Refund Policy v2.1 snippets",
-    "10:42:15 · Classified request as Partial Refund Eligible",
-    "10:42:16 · Draft response generated",
-    "10:42:17 · Human approval created",
+export default function OpsPilotAI() {
+  const [view, setView] = useState<"dashboard" | "run" | "approvals" | "kb">("dashboard");
+  const [active, setActive] = useState<RunKind>("refund");
+  const [approval, setApproval] = useState<Approval>("pending");
+  const [events, setEvents] = useState<string[]>([
+    "Triggered via demo intake",
+    "Refund Policy v2.1 fetched",
+    "AI reasoning summary created",
+    "Draft queued for approval",
   ]);
-  const [running, setRunning] = useState(false);
 
-  const metrics = useMemo(
-    () => [
-      { label: "Workflow runs", value: "148", trend: "+12 this week", icon: <Workflow size={18} /> },
-      { label: "Pending approvals", value: approval === "pending" ? "12" : "11", trend: "Human-in-loop", icon: <ClipboardCheck size={18} /> },
-      { label: "Indexed documents", value: "24", trend: "12,402 chunks", icon: <Database size={18} /> },
-      { label: "Estimated AI cost", value: "$8.42", trend: "$0.04 avg/run", icon: <Gauge size={18} /> },
-    ],
-    [approval]
-  );
-
-  async function triggerDemo(type: RunKey = activeRun) {
-    setRunning(true);
-    setActiveRun(type);
+  async function trigger(kind: RunKind) {
+    setActive(kind);
     setView("run");
-    setEvents(["now · Intake received"]);
-    const response = await fetch("/api/intake/demo", {
+    setApproval(kind === "policy" ? "approved" : "pending");
+    const res = await fetch("/api/intake/demo", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type }),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: kind }),
     });
-    const json = await response.json();
-    const stamped = json.events.map((event: string, index: number) => `+${index + 1}s · ${event}`);
-    setEvents(stamped);
-    setApproval(type === "policy" ? "approved" : "pending");
-    if (type === "lead") {
-      setDraft(
-        "Hi Maya — your team looks like a strong fit for AI workflow automation because you already have repeatable support and sales ops processes. I’d suggest a 30-minute technical discovery focused on intake, routing, approval queues, and CRM handoff points."
-      );
-    } else if (type === "policy") {
-      setDraft(
-        "Support should create an enterprise onboarding escalation, confirm CRM field mapping, assign a technical owner, and schedule a kickoff before implementation starts. Sources: Onboarding SOP and Pricing Tiers 2024."
-      );
-    } else {
-      setDraft(
-        "Hi Alex — thanks for explaining the activation issue. Your request is outside the standard 14-day full-refund window, but based on the Pro plan exception policy we can offer a prorated refund for the unused period. I’ve escalated this for manager approval and will confirm the exact amount once approved."
-      );
-    }
-    setRunning(false);
+    const data = await res.json();
+    setEvents(data.events ?? []);
   }
 
   return (
-    <>
-      <div className="mobile-top">
-        <strong>OpsPilot AI</strong>
-        <span className="badge ok">Demo mode</span>
-      </div>
-      <div className="shell">
-        <Sidebar view={view} setView={setView} />
-        <main className="main">
-          <Topbar />
-          <Hero onTrigger={() => triggerDemo("refund")} />
-          <section className="grid metrics" aria-label="Ops metrics">
-            {metrics.map((metric) => (
-              <article className="card metric" key={metric.label}>
-                <div className="label"><span>{metric.label}</span>{metric.icon}</div>
-                <div className="value mono">{metric.value}</div>
-                <div className="trend">{metric.trend}</div>
-              </article>
-            ))}
-          </section>
-
-          <div className="tabs section">
-            {[
-              ["dashboard", "Dashboard"],
-              ["run", "Workflow Run Detail"],
-              ["approvals", "Approvals"],
-              ["docs", "Knowledge Base"],
-              ["settings", "Settings / Stack"],
-            ].map(([key, label]) => (
-              <button key={key} className={view === key ? "active" : ""} onClick={() => setView(key as View)}>{label}</button>
-            ))}
-          </div>
-
-          {view === "dashboard" && <Dashboard triggerDemo={triggerDemo} running={running} />}
-          {view === "run" && (
-            <RunDetail
-              activeRun={activeRun}
-              approval={approval}
-              setApproval={setApproval}
-              draft={draft}
-              setDraft={setDraft}
-              events={events}
-              triggerDemo={triggerDemo}
-              running={running}
-            />
-          )}
-          {view === "approvals" && <Approvals approval={approval} setApproval={setApproval} setView={setView} />}
-          {view === "docs" && <KnowledgeBase />}
-          {view === "settings" && <SettingsPanel />}
-
-          <footer className="footer">
-            <span>Portfolio owner: Fredy Gimenez · AI Workflow Automation Developer</span>
-            <span>Built as an honest demo shell: seeded data, mocked external actions, reviewable code.</span>
-          </footer>
-        </main>
-      </div>
-    </>
+    <div className="stitch-shell">
+      <Sidebar setView={setView} active={view} />
+      <main className="stitch-main">
+        <Topbar />
+        {view === "dashboard" && <Dashboard trigger={trigger} setView={setView} />}
+        {view === "run" && <RunDetail active={active} events={events} approval={approval} setApproval={setApproval} />}
+        {view === "approvals" && <Approvals setView={setView} setApproval={setApproval} approval={approval} />}
+        {view === "kb" && <KnowledgeBase />}
+      </main>
+    </div>
   );
 }
 
-function Sidebar({ view, setView }: { view: View; setView: (view: View) => void }) {
-  const items: Array<[View, string, React.ReactNode]> = [
-    ["dashboard", "Dashboard", <Activity size={18} key="a" />],
-    ["run", "Workflow Runs", <GitBranch size={18} key="g" />],
-    ["approvals", "Pending Approvals", <ClipboardCheck size={18} key="c" />],
-    ["docs", "Knowledge Base", <FileText size={18} key="f" />],
-    ["settings", "Settings / AI Provider", <Settings size={18} key="s" />],
-  ];
+function Icon({ name, className = "" }: { name: string; className?: string }) {
+  const icons: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
+    deployed_code: Bot,
+    dashboard: LayoutDashboard,
+    account_tree: GitBranch,
+    bolt: Zap,
+    analytics: BarChart3,
+    fact_check: ListChecks,
+    menu_book: BookOpen,
+    settings: Settings,
+    add: Plus,
+    help: HelpCircle,
+    contact_support: Headphones,
+    chevron_right: ChevronRight,
+    search: Search,
+    hub: Network,
+    dns: Server,
+    notifications: Bell,
+    expand_more: ChevronDown,
+    sync: Workflow,
+    verified_user: ShieldCheck,
+    data_object: Database,
+    payments: CreditCard,
+    terminal: Terminal,
+    query_stats: LineChart,
+    play_arrow: Play,
+    rocket_launch: Rocket,
+    inbox: Inbox,
+    sync_alt: Activity,
+    outbox: Send,
+    security: Shield,
+    upload: Upload,
+    description: FileText,
+    database: Database,
+    monitor_heart: Activity,
+  };
+  const Cmp = icons[name] ?? CircleDot;
+  return <Cmp className={`icon ${className}`} size={20} />;
+}
+
+function Sidebar({ setView, active }: { setView: (v: "dashboard" | "run" | "approvals" | "kb") => void; active: string }) {
+  const nav = [
+    ["dashboard", "Dashboard", "dashboard"],
+    ["dashboard", "Templates", "account_tree"],
+    ["run", "Trigger Demo", "bolt"],
+    ["run", "Workflow Runs", "analytics"],
+    ["approvals", "Pending Approvals", "fact_check"],
+    ["kb", "Knowledge Base", "menu_book"],
+  ] as const;
   return (
-    <aside className="sidebar">
-      <div className="logo">
-        <div className="logo-mark">OP</div>
+    <aside className="op-sidebar">
+      <div className="op-brand">
+        <div className="op-mark"><Icon name="deployed_code" /></div>
         <div>
-          <h1>OpsPilot AI</h1>
-          <p>Northstar Ops demo workspace</p>
+          <strong>OpsPilot AI</strong>
+          <span>Northstar Ops Demo</span>
         </div>
       </div>
-      <nav className="nav">
-        {items.map(([key, label, icon]) => (
-          <button key={key} className={view === key ? "active" : ""} onClick={() => setView(key)}>{icon}{label}</button>
+      <nav className="op-nav">
+        {nav.map(([key, label, icon]) => (
+          <button key={label} className={active === key ? "active" : ""} onClick={() => setView(key)}>
+            <Icon name={icon} />
+            {label}
+          </button>
         ))}
+        <button><Icon name="settings" />Settings</button>
       </nav>
-      <div className="sidebar-card">
-        <span className="badge ok"><ShieldCheck size={14} /> Safe demo</span>
-        <p><small>No real customer data, no real email sending, and no hidden credentials required to review the workflow.</small></p>
-      </div>
-      <div className="sidebar-card">
-        <small>Stack target: Next.js, TypeScript, FastAPI, SQLModel, vector retrieval, OpenAI-compatible provider abstraction.</small>
+      <div className="op-side-bottom">
+        <button className="new-workflow"><Icon name="add" /> New Workflow</button>
+        <a><Icon name="help" />Documentation</a>
+        <a><Icon name="contact_support" />Support</a>
+        <div className="admin-chip">
+          <img alt="OpsPilot admin avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe-SiuPRW2_DXtkkuW9S60sIa4lAw4OSmnSKutm8pzXjVEKgepbwFV6SGTsGRebsvFp8OvP7nrQYvVN6u2ZJZYgWwRGjRUXYrdDCuFuU2j90YwrIStK4tnvriuB2tykYpfO54mD5HtdfAF63mEH8hl5WfWQVNFybamo983zhIhksSVSPlRDF3jyMJQa_tMxOeBOfGVyijQXS1cpgw7tKi-LKVwBWDCRLea9hZUoeL59zFNPTvK6M9Qn6tI_0GFeKcxBEbNUd7QwAo" />
+          <div><b>OpsPilot Admin</b><span>Administrator</span></div>
+        </div>
       </div>
     </aside>
   );
@@ -263,257 +197,142 @@ function Sidebar({ view, setView }: { view: View; setView: (view: View) => void 
 
 function Topbar() {
   return (
-    <div className="topbar">
-      <div>
-        <div className="eyebrow">AI Workflow Automation Developer Portfolio</div>
+    <header className="op-topbar">
+      <div className="crumb"><span>Workspace</span><Icon name="chevron_right" /><b>Northstar Ops Workspace</b></div>
+      <label className="op-search"><Icon name="search" /><input placeholder="Search workflow, logs, or templates..." /></label>
+      <div className="top-actions">
+        <span className="demo-pill"><i /> Demo Mode</span>
+        <Icon name="hub" />
+        <Icon name="dns" />
+        <span className="bell"><Icon name="notifications" /><i /></span>
+        <span className="divider" />
+        <button>Internal <Icon name="expand_more" /></button>
       </div>
-      <div className="badges">
-        <span className="badge ok"><CheckCircle2 size={14} /> Provider mock online</span>
-        <span className="badge"><Code2 size={14} /> Next.js + FastAPI architecture</span>
-        <span className="badge warn"><AlertTriangle size={14} /> External sends disabled</span>
-      </div>
-    </div>
+    </header>
   );
 }
 
-function Hero({ onTrigger }: { onTrigger: () => void }) {
+function Dashboard({ trigger, setView }: { trigger: (kind: RunKind) => void; setView: (v: "dashboard" | "run" | "approvals" | "kb") => void }) {
   return (
-    <section className="hero">
-      <div className="hero-content">
-        <div>
-          <div className="eyebrow">Flagship demo · OpsPilot AI</div>
-          <h2>Human-approved AI workflows for SaaS operations.</h2>
-          <p>
-            OpsPilot AI receives business events, retrieves company knowledge, proposes AI-assisted next actions,
-            and lets a human approve or edit every external action before execution.
-          </p>
-          <div className="hero-actions">
-            <button className="btn primary" onClick={onTrigger}><Play size={18} /> Trigger refund demo</button>
-            <a className="btn" href="#architecture"><Layers3 size={18} /> Architecture</a>
+    <div className="op-content">
+      <section className="kpis">
+        <Kpi label="Workflow Runs" icon="sync" value="12,842" meta="+12.4%" bar="cyan" />
+        <Kpi label="Pending Approvals" icon="verified_user" value="42" meta="NEEDS ACTION" bar="amber" />
+        <Kpi label="Retrieved Docs" icon="data_object" value="854.2k" meta="INDEXED" bar="violet" />
+        <Kpi label="Estimated AI Cost" icon="payments" value="$2,412.00" meta="MTD" bar="emerald" />
+      </section>
+
+      <section className="middle-grid">
+        <div className="templates-panel">
+          <div className="section-title"><h2>Active Workflow Templates</h2><button>Browse All</button></div>
+          <div className="template-grid">
+            {templates.map((tpl) => (
+              <article className="template-card" key={tpl.key}>
+                <div className="template-head"><span>{tpl.tag}</span><Icon name={tpl.icon} /></div>
+                <h3>{tpl.title}</h3>
+                <p>{tpl.text}</p>
+                <button onClick={() => trigger(tpl.key)}><Icon name="play_arrow" /> Trigger</button>
+              </article>
+            ))}
           </div>
         </div>
-        <div className="card flowline">
-          <h3>Workflow contract</h3>
-          {[
-            ["Input", "Webhook/form intake with typed payload"],
-            ["Retrieve", "RAG over Northstar Ops policies"],
-            ["Decide", "Classify, draft, estimate cost"],
-            ["Approve", "Human edits, approves, rejects"],
-            ["Log", "Run timeline and context trail"],
-          ].map(([title, text], index) => (
-            <div className="flow-step" key={title}><div className="step-dot mono">{index + 1}</div><div><b>{title}</b><br /><span>{text}</span></div></div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Dashboard({ triggerDemo, running }: { triggerDemo: (key: RunKey) => void; running: boolean }) {
-  return (
-    <>
-      <section className="section">
-        <div className="section-head">
-          <div><h3>Workflow templates</h3><p>Three market-backed flows that map to AI automation, RAG, internal tools, and SaaS operations jobs.</p></div>
-        </div>
-        <div className="grid three-col">
-          {templates.map((template) => (
-            <article className="card template-card" key={template.key}>
-              <span className="badge"><Sparkles size={14} /> {template.type}</span>
-              <h3 style={{ marginTop: 14 }}>{template.name}</h3>
-              <p>{template.outcome}</p>
-              <small style={{ color: "var(--muted)" }}>Trigger: {template.trigger}</small>
-              <div style={{ marginTop: 16 }}>
-                <button className="btn primary" onClick={() => triggerDemo(template.key)} disabled={running}>
-                  {running ? <RefreshCw size={16} /> : <Play size={16} />} Run demo
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+        <aside className="quick-panel">
+          <h2>Quick Actions</h2>
+          <button className="trigger-event" onClick={() => trigger("refund")}><Icon name="rocket_launch" /> Trigger Demo Event</button>
+          <small>Pipeline Visualization</small>
+          <div className="pipeline">
+            <PipelineStep icon="inbox" label="Input" />
+            <PipelineStep icon="sync_alt" label="Mapping" active />
+            <PipelineStep icon="outbox" label="Output" />
+          </div>
+          <div className="sys-log"><span>System Load</span><b>Optimal</b></div>
+          <div className="sys-log"><span>Gateway Latency</span><b>28ms</b></div>
+          <div className="autorefresh">AUTOREFRESH <i /></div>
+        </aside>
       </section>
-      <RunLog />
-      <Architecture />
-    </>
-  );
-}
 
-function RunLog() {
-  return (
-    <section className="section">
-      <div className="section-head"><div><h3>Recent run log</h3><p>Every automation produces a reviewable event trail, context set, output draft, approval decision, and cost estimate.</p></div></div>
-      <div className="card" style={{ overflowX: "auto" }}>
-        <table className="table">
-          <thead><tr><th>Time</th><th>Workflow</th><th>Status</th><th>Tokens</th><th>Latency</th><th>Audit</th></tr></thead>
+      <section className="run-log-card">
+        <h2>Recent Run Log</h2>
+        <table>
+          <thead><tr><th>Timestamp</th><th>Workflow Name</th><th>Status</th><th>Tokens Used</th><th>Latency</th><th>Audit</th></tr></thead>
           <tbody>
-            {initialLogs.map((log) => (
-              <tr key={log.id}>
-                <td className="mono">{log.time}</td>
-                <td><b>{log.name}</b><br /><span style={{ color: "var(--muted)" }}>{log.id}</span></td>
-                <td><Status status={log.status} /></td>
-                <td className="mono">{log.tokens}</td>
-                <td className="mono">{log.latency}</td>
-                <td><span className="badge"><Search size={14} /> View trail</span></td>
+            {runRows.map(([time, name, status, tokens, latency]) => (
+              <tr key={time}>
+                <td>{time}</td><td><b>{name}</b></td><td><Status status={status} /></td><td>{tokens}</td><td>{latency}</td><td><Icon name="security" /></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-    </section>
+        <footer><span>Showing 1–4 of 1,284 entries</span><span>PREV&nbsp;&nbsp; 1 &nbsp;&nbsp;NEXT</span></footer>
+      </section>
+
+      <section className="portfolio-strip">
+        <span>Portfolio owner: <b>Fredy Gimenez</b></span>
+        <span>AI Workflow Automation Developer · Next.js · FastAPI · RAG · Human Approval</span>
+        <button onClick={() => setView("run")}>Open run detail</button>
+      </section>
+    </div>
   );
+}
+
+function Kpi({ label, icon, value, meta, bar }: { label: string; icon: string; value: string; meta: string; bar: string }) {
+  return (
+    <article className="kpi-card">
+      <div><span>{label}</span><Icon name={icon} className={bar} /></div>
+      <strong>{value}</strong><em className={bar}>{meta}</em>
+      <div className={`mini-bar ${bar}`}><i /></div>
+    </article>
+  );
+}
+
+function PipelineStep({ icon, label, active = false }: { icon: string; label: string; active?: boolean }) {
+  return <div className={active ? "pipe active" : "pipe"}><Icon name={icon} /><span>{label}</span></div>;
 }
 
 function Status({ status }: { status: string }) {
-  const klass = status.toLowerCase() === "success" ? "success" : status.toLowerCase() === "pending" ? "pending" : status.toLowerCase() === "failed" ? "failed" : "running";
-  return <span className={`status ${klass}`}>{status === "Success" ? <CheckCircle2 size={13} /> : status === "Failed" ? <XCircle size={13} /> : <Activity size={13} />}{status}</span>;
+  return <span className={`status status-${status.toLowerCase()}`}>{status}</span>;
 }
 
-function RunDetail({ activeRun, approval, setApproval, draft, setDraft, events, triggerDemo, running }: {
-  activeRun: RunKey; approval: ApprovalState; setApproval: (state: ApprovalState) => void; draft: string; setDraft: (draft: string) => void; events: string[]; triggerDemo: (key: RunKey) => void; running: boolean;
-}) {
-  const title = activeRun === "refund" ? "Support Refund Triage" : activeRun === "lead" ? "Lead Qualification" : "Internal Policy Q&A";
+function RunDetail({ active, events, approval, setApproval }: { active: RunKind; events: string[]; approval: Approval; setApproval: (a: Approval) => void }) {
+  const isLead = active === "lead";
+  const isPolicy = active === "policy";
   return (
-    <section className="section">
-      <div className="section-head">
-        <div><h3>Workflow Run Detail · {title}</h3><p>Shows original input, retrieved context, AI reasoning summary, draft, approval decision, and final run events.</p></div>
-        <div className="badges"><Status status={approval === "pending" ? "Pending" : approval === "approved" ? "Success" : "Failed"} /><span className="badge mono">WR-7742</span></div>
+    <div className="op-content run-screen">
+      <div className="run-head">
+        <div><span>Workflow Run</span><h1>{isLead ? "Lead Qualification" : isPolicy ? "Internal Policy Q&A" : "Support Refund Triage"}</h1></div>
+        <Status status={approval === "pending" ? "PENDING" : approval === "approved" ? "SUCCESS" : "FAILED"} />
       </div>
-      <div className="grid detail-grid">
-        <div className="grid">
-          <article className="card">
-            <h3>Original intake</h3>
-            <div className="kv" style={{ marginTop: 12 }}>
-              <div className="kv-row"><span>Source</span><b>POST /intake/demo</b></div>
-              <div className="kv-row"><span>Company</span><b>Northstar Ops</b></div>
-              <div className="kv-row"><span>Scenario</span><b>{activeRun === "refund" ? "Refund after 19 days on Pro plan" : activeRun === "lead" ? "Series A SaaS lead, 35 employees" : "Enterprise onboarding policy question"}</b></div>
-              <div className="kv-row"><span>External action</span><b>Disabled until human approval</b></div>
-            </div>
-          </article>
-          <article className="card">
-            <h3>Retrieved context</h3>
-            {sources.map((source) => (
-              <div className="source" key={source.cite}>
-                <b>{source.title} · {source.cite}</b>
-                <p>{source.text}</p>
-              </div>
-            ))}
-          </article>
-          <article className="card">
-            <h3>Run events</h3>
-            <div className="log" style={{ marginTop: 12 }}>
-              {events.map((event) => <div className="log-item" key={event}><time>{event.split(" · ")[0]}</time><span>{event.split(" · ").slice(1).join(" · ") || event}</span></div>)}
-            </div>
-          </article>
-        </div>
-        <div className="grid">
-          <article className="card">
-            <div className="section-head"><div><h3>AI analysis</h3><p>Grounded summary, not a hidden chatbot response.</p></div><span className="badge ok">2,140 tokens · est. $0.04</span></div>
-            <div className="grid two-col">
-              <div className="source"><b>Classification</b><p>{activeRun === "refund" ? "Partial Refund Eligible" : activeRun === "lead" ? "High Fit · 86/100" : "Enterprise onboarding escalation"}</p></div>
-              <div className="source"><b>Reasoning summary</b><p>{activeRun === "refund" ? "Outside the standard 14-day window, but Pro plan allows prorated exception for documented activation issues." : activeRun === "lead" ? "Strong fit: clear team size, urgent operations pain, and defined use case across support and sales ops." : "Enterprise onboarding requires implementation ticket, CRM mapping, owner assignment, and kickoff."}</p></div>
-            </div>
-          </article>
-          <article className="card">
-            <h3>Drafted action</h3>
-            <p>Edit the generated output before approving. The demo intentionally does not send real emails.</p>
-            <textarea value={draft} onChange={(event) => setDraft(event.target.value)} />
-            <div className="hero-actions">
-              <button className="btn" onClick={() => setApproval("pending")}>Edit saved</button>
-              <button className="btn success" onClick={() => setApproval("approved")}><CheckCircle2 size={16} /> Approve</button>
-              <button className="btn danger" onClick={() => setApproval("rejected")}><XCircle size={16} /> Reject</button>
-            </div>
-          </article>
-          <article className="card">
-            <h3>Try another flow</h3>
-            <div className="hero-actions">
-              {templates.map((template) => <button key={template.key} className="btn" onClick={() => triggerDemo(template.key)} disabled={running}>{template.name} <ArrowRight size={15} /></button>)}
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
+      <section className="run-grid">
+        <article className="detail-card"><h2>Original Intake</h2><pre>{JSON.stringify({ run_id: "WR-7742", source: "POST /intake/demo", scenario: isLead ? "Series A SaaS, 35 employees" : isPolicy ? "Enterprise onboarding question" : "Refund after 19 days on Pro plan", external_actions: "disabled_until_approved" }, null, 2)}</pre></article>
+        <article className="detail-card"><h2>Knowledge Retrieval</h2><Source title="Refund Policy v2.1" text="Standard refund window is restricted to 14 days; Pro plan exceptions may be prorated." /><Source title="Lead Qualification Rules" text="High-fit leads show urgent workflow pain, 20+ employees and clear operational owner." /></article>
+        <article className="detail-card wide"><h2>AI Analysis</h2><p>{isLead ? "High Fit · 86/100. Clear support/sales ops automation need and buyer-level urgency." : isPolicy ? "Enterprise onboarding requires implementation ticket, CRM mapping and technical owner assignment." : "Partial Refund Eligible. Outside standard window but Pro plan allows manager-level prorated exception."}</p></article>
+        <article className="detail-card wide"><h2>Human-in-the-loop decision</h2><textarea defaultValue={isLead ? "Hi Maya — your team looks like a strong fit for AI workflow automation. I suggest a 30-minute discovery around intake, routing and approval queues." : "Hi Alex — your request is outside the standard 14-day window, but based on the Pro plan exception policy we can offer a prorated refund for the unused period."} /><div className="decision-actions"><button>Edit</button><button onClick={() => setApproval("approved")}>Approve</button><button onClick={() => setApproval("rejected")}>Reject</button></div></article>
+        <article className="detail-card"><h2>Event Timeline</h2>{events.map((event, i) => <div className="event" key={event}><i>{i + 1}</i>{event}</div>)}</article>
+        <article className="detail-card"><h2>Technicals</h2><p className="mono-big">2,140 tokens</p><p>Estimated cost: <b>$0.04</b></p><p>Gateway latency: <b>28ms</b></p></article>
+      </section>
+    </div>
   );
 }
 
-function Approvals({ approval, setApproval, setView }: { approval: ApprovalState; setApproval: (state: ApprovalState) => void; setView: (view: View) => void }) {
-  const items = [
-    ["Refund Response", approval === "pending" ? "Review Required" : approval === "approved" ? "Approved" : "Rejected", "Medium", "Customer refund after 19 days on Pro plan"],
-    ["Lead Follow-up", "Drafted", "Low", "Series A SaaS wants AI workflows for support and sales ops"],
-    ["Onboarding Escalation", "High Priority", "High", "Enterprise customer needs implementation kickoff"],
-  ];
+function Source({ title, text }: { title: string; text: string }) {
+  return <div className="source-row"><b>{title}</b><p>{text}</p></div>;
+}
+
+function Approvals({ setView, setApproval, approval }: { setView: (v: "dashboard" | "run" | "approvals" | "kb") => void; setApproval: (a: Approval) => void; approval: Approval }) {
   return (
-    <section className="section grid two-col">
-      <div>
-        <div className="section-head"><div><h3>Pending approvals</h3><p>Human-in-the-loop queue before any external action.</p></div><span className="badge warn">12 queued</span></div>
-        <div className="approval-list">
-          {items.map(([name, status, risk, text]) => (
-            <article className="approval-card" key={name}>
-              <div className="approval-top"><div><b>{name}</b><p>{text}</p></div><span className="badge">Risk: {risk}</span></div>
-              <div className="hero-actions"><span className="status pending">{status}</span><button className="btn" onClick={() => setView("run")}>Review</button><button className="btn success" onClick={() => setApproval("approved")}>Approve</button></div>
-            </article>
-          ))}
-        </div>
-      </div>
+    <div className="op-content approvals-layout">
+      <section className="queue"><h1>Pending Approvals <span>12</span></h1>{["Refund Response", "Lead Follow-up", "Onboarding Escalation"].map((name, i) => <article key={name}><div><b>{name}</b><p>{i === 0 ? "Review Required" : i === 1 ? "Drafted" : "High Priority"}</p></div><Status status={i === 0 && approval !== "pending" ? (approval === "approved" ? "SUCCESS" : "FAILED") : "PENDING"} /><button onClick={() => setView("run")}>Review</button><button onClick={() => setApproval("approved")}>Approve</button></article>)}</section>
       <KnowledgeBase embedded />
-    </section>
+    </div>
   );
 }
 
 function KnowledgeBase({ embedded = false }: { embedded?: boolean }) {
   return (
-    <section className={embedded ? "" : "section"}>
-      <div className="section-head"><div><h3>Knowledge Base / Documents</h3><p>Seeded company policies that power retrieval and cited answers.</p></div><button className="btn primary"><Upload size={16} /> Upload document</button></div>
-      <div className="grid metrics" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-        <article className="card metric"><div className="label">Documents<FileText size={16}/></div><div className="value mono">24</div><div className="trend">5 seeded for demo</div></article>
-        <article className="card metric"><div className="label">Indexed chunks<Database size={16}/></div><div className="value mono">12,402</div><div className="trend">Chunk size 800 chars</div></article>
-        <article className="card metric"><div className="label">Retrieval health<Search size={16}/></div><div className="value mono">99.2%</div><div className="trend">Mock vector index online</div></article>
-      </div>
-      <div className="grid doc-grid" style={{ marginTop: 16 }}>
-        {docs.map((doc) => (
-          <article className="card doc-card" key={doc.title}>
-            <div className="approval-top"><h3>{doc.title}</h3><span className="badge mono">{doc.chunks} chunks</span></div>
-            <p>{doc.excerpt}</p>
-            <div className="badges"><span className="badge">Last sync {doc.updated}</span><span className="badge"><Search size={13}/> Source preview</span></div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function SettingsPanel() {
-  return (
-    <section className="section grid two-col">
-      <article className="card">
-        <h3>AI provider settings</h3>
-        <p>Portfolio-safe provider abstraction. The public demo uses mock outputs so reviewers can understand the product without private credentials.</p>
-        <div className="kv">
-          <div className="kv-row"><span>Provider</span><b>OpenAI-compatible abstraction</b></div>
-          <div className="kv-row"><span>Embeddings</span><b>Pluggable embeddings adapter</b></div>
-          <div className="kv-row"><span>External sends</span><b>Disabled in demo</b></div>
-          <div className="kv-row"><span>Vector store</span><b>pgvector / Chroma-ready skeleton</b></div>
-        </div>
-      </article>
-      <article className="card" id="architecture">
-        <h3>Why this demo gets freelance signals</h3>
-        <p>It demonstrates a real workflow surface: intake, retrieval, decisioning, human approval, status, logs, and deployment. It supports applications for AI automation, FastAPI, RAG, internal tools, and workflow dashboards.</p>
-        <div className="hero-actions"><a className="btn" href="/README.md">README concept</a><a className="btn" href="https://github.com/" target="_blank">GitHub-ready</a></div>
-      </article>
-    </section>
-  );
-}
-
-function Architecture() {
-  return (
-    <section className="section" id="architecture">
-      <div className="section-head"><div><h3>Architecture slice</h3><p>First release shell designed to evolve into a FastAPI + workflow-engine + RAG backend.</p></div></div>
-      <div className="grid three-col">
-        {[
-          [<Bot key="b" />, "AI workflow orchestration", "Template registry, intake endpoint, provider abstraction, prompt templates, cost/token estimate."],
-          [<Database key="d" />, "RAG and documents", "Document upload, chunking, embeddings, retrieval, cited context panel, source snippets."],
-          [<ClipboardCheck key="c" />, "Human approval service", "Edit, approve, reject, and audit every proposed external action before execution."],
-        ].map(([icon, title, text]) => <article className="card" key={String(title)}><span className="badge">{icon} Technical module</span><h3 style={{ marginTop: 14 }}>{title}</h3><p>{text}</p></article>)}
-      </div>
+    <section className={embedded ? "kb embedded" : "op-content kb"}>
+      <div className="section-title"><h1>Knowledge Base</h1><button><Icon name="upload" /> Upload Document</button></div>
+      <div className="kb-stats"><Kpi label="Total Documents" icon="description" value="24" meta="Seeded" bar="cyan" /><Kpi label="Indexed Chunks" icon="database" value="12,402" meta="VECTOR DB" bar="violet" /><Kpi label="Retrieval Health" icon="monitor_heart" value="99.2%" meta="ONLINE" bar="emerald" /></div>
+      <div className="doc-grid">{docs.map(([title, text, chunks]) => <article key={title}><b>{title}</b><p>{text}</p><span>{chunks}</span><button>Source Preview</button></article>)}</div>
     </section>
   );
 }
