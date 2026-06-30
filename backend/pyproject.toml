@@ -1,0 +1,6 @@
+[project]
+name = "opspilot-ai-backend"
+version = "0.1.0"
+description = "FastAPI skeleton for OpsPilot AI portfolio demo"
+requires-python = ">=3.11"
+dependencies = ["fastapi", "uvicorn", "pydantic"]
