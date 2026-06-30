@@ -10,7 +10,7 @@ OpsPilot AI is a production-style portfolio demo for AI workflow automation work
 ## Public demo
 
 - Vercel URL: https://opspilot-ai-gamma.vercel.app
-- GitHub URL: _added after publish_
+- GitHub URL: https://github.com/JuanCG13/fredy-opspilot-ai
 - Stitch project: `projects/4373726541519858586`
 - Stitch design system: `assets/8921000560763558236`
 
