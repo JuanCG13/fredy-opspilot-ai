@@ -448,89 +448,77 @@
                 button.classList.remove('scale-95');
             });
             button</script>
+
+
 <style id="stitch-demo-interactions-style">
   .demo-toast-host { position: fixed; right: 24px; bottom: 24px; z-index: 99999; display: grid; gap: 10px; pointer-events: none; }
   .demo-toast { pointer-events: auto; max-width: 360px; border: 1px solid rgba(56,189,248,.35); background: rgba(2,6,23,.92); color: #e2e8f0; border-radius: 14px; padding: 12px 14px; box-shadow: 0 18px 50px rgba(0,0,0,.34); font: 600 12px Inter, system-ui, sans-serif; backdrop-filter: blur(14px); }
   .demo-toast b { display:block; color: #67e8f9; margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
   .demo-modal-backdrop { position: fixed; inset: 0; z-index: 99998; display: none; place-items: center; background: rgba(2,6,23,.58); backdrop-filter: blur(8px); }
   .demo-modal-backdrop.open { display: grid; }
-  .demo-modal { width: min(520px, calc(100vw - 32px)); border: 1px solid rgba(56,189,248,.32); background: #0f172a; color: #e2e8f0; border-radius: 18px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); font-family: Inter, system-ui, sans-serif; }
+  .demo-modal { width: min(560px, calc(100vw - 32px)); border: 1px solid rgba(56,189,248,.32); background: #0f172a; color: #e2e8f0; border-radius: 18px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); font-family: Inter, system-ui, sans-serif; }
   .demo-modal h3 { margin: 0 0 8px; font: 700 20px 'Space Grotesk', Inter, sans-serif; color: #f8fafc; }
   .demo-modal p { margin: 0 0 16px; color: #94a3b8; line-height: 1.55; font-size: 13px; }
   .demo-modal input, .demo-modal select, .demo-modal textarea { width: 100%; margin: 7px 0; border: 1px solid #334155; border-radius: 10px; background: #020617; color: #e2e8f0; padding: 10px 12px; font: 13px Inter, system-ui, sans-serif; }
   .demo-modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
-  .demo-modal-actions button { border:1px solid #334155; border-radius:10px; padding:9px 13px; background:#111827; color:#cbd5e1; }
-  .demo-modal-actions button.primary { border-color: rgba(34,211,238,.45); background: rgba(6,182,212,.18); color:#67e8f9; }
+  .demo-modal-actions button, .demo-panel button { border:1px solid #334155; border-radius:10px; padding:9px 13px; background:#111827; color:#cbd5e1; cursor:pointer; font-weight:700; }
+  .demo-modal-actions button.primary, .demo-panel button.primary { border-color: rgba(34,211,238,.45); background: rgba(6,182,212,.18); color:#67e8f9; }
+  .demo-panel { position: fixed; top: 18px; right: 18px; bottom: 18px; width: min(440px, calc(100vw - 36px)); z-index: 99997; transform: translateX(calc(100% + 24px)); transition: transform .22s ease; border: 1px solid rgba(56,189,248,.28); border-radius: 20px; background: rgba(15,23,42,.96); color: #e2e8f0; box-shadow: 0 30px 90px rgba(0,0,0,.48); backdrop-filter: blur(18px); overflow: hidden; font-family: Inter, system-ui, sans-serif; }
+  .demo-panel.open { transform: translateX(0); }
+  .demo-panel header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:18px 18px 12px; border-bottom:1px solid rgba(148,163,184,.16); }
+  .demo-panel h3 { margin:0; font:700 18px 'Space Grotesk', Inter, sans-serif; color:#f8fafc; }
+  .demo-panel .close { padding:6px 10px; }
+  .demo-panel .body { padding: 16px 18px 20px; overflow:auto; max-height: calc(100% - 70px); }
+  .demo-panel .item { border: 1px solid rgba(148,163,184,.16); background: rgba(2,6,23,.28); border-radius: 14px; padding: 12px; margin: 0 0 10px; }
+  .demo-panel .item b { display:block; color:#f8fafc; margin-bottom:4px; }
+  .demo-panel .item span, .demo-panel p { color:#94a3b8; line-height:1.5; font-size:13px; }
+  .demo-panel .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
   .demo-interactive-pulse { outline: 2px solid rgba(56,189,248,.45) !important; box-shadow: 0 0 0 6px rgba(56,189,248,.08) !important; transition: box-shadow .2s ease, outline .2s ease; }
 </style>
 
 
 <script id="stitch-demo-interactions-script">
 (() => {
-  const DEMO = 'OpsPilot AI';
-  const route = (path) => {
-    if (window.top && window.top !== window) window.top.location.href = path;
-    else window.location.href = path;
+  const route = (path) => { if (window.top && window.top !== window) window.top.location.href = path; else window.location.href = path; };
+  const host = document.createElement('div'); host.className = 'demo-toast-host'; document.body.appendChild(host);
+  const toast = (title, msg) => { const el=document.createElement('div'); el.className='demo-toast'; el.innerHTML=`<b>${title}</b><span>${msg}</span>`; host.appendChild(el); setTimeout(()=>el.remove(),3600); };
+  const modal = document.createElement('div'); modal.className='demo-modal-backdrop'; modal.innerHTML=`<div class="demo-modal" role="dialog" aria-modal="true"><h3></h3><p></p><div class="demo-fields"></div><div class="demo-modal-actions"><button data-demo-close>Cancel</button><button class="primary" data-demo-confirm>Save</button></div></div>`; document.body.appendChild(modal);
+  const panel = document.createElement('aside'); panel.className='demo-panel'; panel.innerHTML=`<header><div><h3></h3><p></p></div><button class="close" data-demo-panel-close>Close</button></header><div class="body"></div>`; document.body.appendChild(panel);
+  function openModal(title,text,fields=''){ modal.querySelector('h3').textContent=title; modal.querySelector('p').textContent=text; modal.querySelector('.demo-fields').innerHTML=fields; modal.classList.add('open'); }
+  function openPanel(title,text,body){ panel.querySelector('h3').textContent=title; panel.querySelector('header p').textContent=text; panel.querySelector('.body').innerHTML=body; panel.classList.add('open'); }
+  modal.addEventListener('click',e=>{ if(e.target===modal||e.target.matches('[data-demo-close]')) modal.classList.remove('open'); if(e.target.matches('[data-demo-confirm]')){ modal.classList.remove('open'); toast('Saved in demo','Local state updated safely inside the Stitch screen.'); }});
+  panel.addEventListener('click',async e=>{ if(e.target.matches('[data-demo-panel-close]')) panel.classList.remove('open'); if(e.target.matches('[data-run-refund]')){ await api('refund'); route('/run-detail'); } if(e.target.matches('[data-run-lead]')){ await api('lead'); route('/run-detail'); } if(e.target.matches('[data-open-approvals]')) route('/approvals-kb'); });
+  function textOf(el){return (el.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()} function mark(el){el.classList.add('demo-interactive-pulse'); setTimeout(()=>el.classList.remove('demo-interactive-pulse'),900)}
+  async function api(type='refund'){ try{ const res=await fetch('/api/intake/demo',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type})}); const data=await res.json(); toast('Demo run queued', `${data.run?.workflow||'Workflow'} → ${data.run?.classification||data.run?.approval||'pending'}`); return data; } catch { toast('Demo API unavailable','Interaction completed visually; API call did not finish.'); return null; } }
+  const panels = {
+    templates: ['Workflow templates','Re-usable automations without leaving the Stitch design.', `<div class="item"><b>Refund triage</b><span>RAG citation + human approval.</span><div class="actions"><button class="primary" data-run-refund>Run demo</button></div></div><div class="item"><b>Lead qualification</b><span>Score inbound leads and draft follow-up.</span><div class="actions"><button data-run-lead>Run demo</button></div></div><div class="item"><b>Document extraction</b><span>Extract fields and queue exceptions.</span></div>`],
+    trigger: ['Trigger demo','Launch safe mock events from the current Stitch dashboard.', `<div class="item"><b>Refund request webhook</b><span>Calls the mock API and opens the Stitch run detail screen.</span><div class="actions"><button class="primary" data-run-refund>Run refund demo</button></div></div><div class="item"><b>Lead qualification event</b><span>Creates a mock sales ops workflow run.</span><div class="actions"><button data-run-lead>Run lead demo</button></div></div>`],
+    runs: ['Workflow runs','Use the Stitch run-detail screen for the selected execution.', `<div class="item"><b>WR-7742 · Support Refund Triage</b><span>Pending approval · 11.2s</span><div class="actions"><button class="primary" data-run-refund>Open run detail</button></div></div><div class="item"><b>WR-7743 · Lead Qualification</b><span>High fit · pending human review</span><div class="actions"><button data-run-lead>Open run detail</button></div></div>`],
+    settings: ['Settings','Demo-safe controls; no secrets or production effects.', `<div class="item"><b>Provider routing</b><span>Model fallback and timeout rules.</span><div class="actions"><button>Toggle provider</button></div></div><div class="item"><b>Approval guardrails</b><span>Require human review for external actions.</span><div class="actions"><button>Toggle guardrail</button></div></div><div class="item"><b>Webhook intake</b><span>Zendesk/HubSpot/Slack sandbox webhooks.</span><div class="actions"><button>Inspect webhook</button></div></div>`],
+    docs: ['Documentation','Implementation notes for the portfolio demo.', `<div class="item"><b>Architecture</b><span>Stitch HTML/CSS/assets are mounted directly; this layer only adds behavior.</span></div><div class="item"><b>Safety</b><span>All actions use mock APIs, modals and local demo state.</span></div>`],
+    support: ['Support handoff','Simulated support operations surface.', `<div class="item"><b>Mock support ticket</b><span>Queued for human review, no external message sent.</span><div class="actions"><button data-open-approvals>Open approvals</button></div></div>`]
   };
-  const host = document.createElement('div');
-  host.className = 'demo-toast-host';
-  document.body.appendChild(host);
-  function toast(title, message) {
-    const el = document.createElement('div');
-    el.className = 'demo-toast';
-    el.innerHTML = `<b>${title}</b><span>${message}</span>`;
-    host.appendChild(el);
-    setTimeout(() => el.remove(), 3600);
-  }
-  const modal = document.createElement('div');
-  modal.className = 'demo-modal-backdrop';
-  modal.innerHTML = `<div class="demo-modal" role="dialog" aria-modal="true"><h3></h3><p></p><div class="demo-fields"></div><div class="demo-modal-actions"><button data-demo-close>Cancel</button><button class="primary" data-demo-confirm>Save</button></div></div>`;
-  document.body.appendChild(modal);
-  function openModal(title, text, fields = '') {
-    modal.querySelector('h3').textContent = title;
-    modal.querySelector('p').textContent = text;
-    modal.querySelector('.demo-fields').innerHTML = fields;
-    modal.classList.add('open');
-  }
-  modal.addEventListener('click', (event) => {
-    if (event.target === modal || event.target.matches('[data-demo-close]')) modal.classList.remove('open');
-    if (event.target.matches('[data-demo-confirm]')) { modal.classList.remove('open'); toast('Saved in demo', 'The portfolio shell updated this item locally for the demo session.'); }
-  });
-  function mark(el) { el.classList.add('demo-interactive-pulse'); setTimeout(() => el.classList.remove('demo-interactive-pulse'), 900); }
-  function textOf(el) { return (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
-  async function triggerApi(type='refund') {
-    try {
-      const res = await fetch('/api/intake/demo', { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({ type }) });
-      const data = await res.json();
-      toast('Demo event triggered', `${data.run?.workflow || 'Workflow'} → ${data.run?.classification || 'queued'}`);
-    } catch (err) { toast('Demo API unavailable', 'The visual action still works; API call did not complete.'); }
-  }
-  document.addEventListener('click', (event) => {
-    const el = event.target.closest('button,a');
-    if (!el) return;
-    const t = textOf(el);
-    const href = el.getAttribute('href');
-    if (href === '#') event.preventDefault();
-    mark(el);
-    if (t.includes('dashboard')) return route('/');
-    if (t.includes('workflow runs') || t.includes('trigger demo') || t.includes('trigger demo event')) { event.preventDefault(); triggerApi('refund'); setTimeout(() => route('/run-detail'), 350); return; }
-    if (t.includes('pending approvals') || t.includes('knowledge base')) return route('/approvals-kb');
-    if (t.includes('templates') || t.includes('browse all')) { toast('Templates opened', 'Refund triage, lead qualification, policy Q&A and extraction templates are available in this demo.'); return; }
-    if (t.includes('new workflow')) { openModal('New workflow template', 'Create a demo workflow without leaving the Stitch design.', '<input value="Customer escalation triage"/><select><option>RAG + approval</option><option>Lead scoring</option><option>Document extraction</option></select>'); return; }
-    if (t.includes('documentation')) { toast('Documentation', 'Demo docs are represented in the Knowledge Base screen and README.'); return; }
-    if (t.includes('support')) { toast('Support handoff', 'A mock support handoff was queued for human review.'); return; }
-    if (t.includes('share')) { navigator.clipboard?.writeText(window.top?.location?.href || location.href); toast('Share link copied', 'The current demo route was copied to clipboard.'); return; }
-    if (t.includes('audit logs') || t.includes('history')) { toast('Audit logs opened', 'Webhook intake, retrieval, reasoning and approval events are visible in the run timeline.'); return; }
-    if (t.includes('edit email') || t === 'edit' || t.includes('edit_note')) { openModal('Edit draft output', 'This modal simulates editing the AI-generated response before approval.', '<textarea rows="5">Hi Ava — your refund is eligible under Refund Policy v2.1. I can process the partial refund after your confirmation.</textarea>'); return; }
-    if (t.includes('approve')) { toast('Approved', 'The drafted response moved from pending approval to approved in this demo session.'); document.querySelectorAll('*').forEach(n => { if ((n.textContent||'').trim() === 'PENDING') n.textContent = 'APPROVED'; }); return; }
-    if (t.includes('reject') || t.includes('block')) { toast('Rejected', 'The workflow was marked rejected for human revision.'); return; }
-    if (t.includes('policy')) { toast('Policy citation opened', 'Refund Policy v2.1 citation preview selected.'); return; }
-    if (t.includes('prev')) { toast('Previous page', 'Demo pagination moved to the previous run set.'); return; }
-    if (t.includes('next')) { toast('Next page', 'Demo pagination moved to the next run set.'); return; }
-    if (t.includes('hub') || t.includes('dns') || t.includes('notifications') || t.includes('internal')) { toast('Topbar action', 'Workspace status panel toggled for the demo.'); return; }
-    if (t.includes('settings')) { openModal('Workspace settings', 'Settings are demo-safe and do not store secrets.', '<input value="Northstar Ops Workspace"/><select><option>Internal demo mode</option></select>'); return; }
+  document.addEventListener('click', async (event) => {
+    const el = event.target.closest('button,a,[role="button"]'); if(!el) return; const t=textOf(el); mark(el); if(el.getAttribute('href')==='#') event.preventDefault();
+    if(t.includes('dashboard')) return route('/');
+    if(t.includes('templates') || t.includes('browse all')) return openPanel(...panels.templates);
+    if(t.includes('trigger demo event') || t.includes('trigger demo') || t === 'trigger' || t.includes('play_arrow trigger')) return openPanel(...panels.trigger);
+    if(t.includes('workflow runs')) return openPanel(...panels.runs);
+    if(t.includes('pending approvals') || t.includes('knowledge base')) return route('/approvals-kb');
+    if(t.includes('settings') || t.includes('internal') || t.includes('hub') || t.includes('dns') || t.includes('notifications')) return openPanel(...panels.settings);
+    if(t.includes('documentation')) return openPanel(...panels.docs);
+    if(t.includes('support')) return openPanel(...panels.support);
+    if(t.includes('new workflow')) return openModal('New workflow template','Create a demo-safe workflow using the same OpsPilot pattern.','<input value="Customer escalation triage"/><select><option>RAG + human approval</option><option>Lead scoring</option><option>Document extraction</option></select>');
+    if(t.includes('share')){ await navigator.clipboard?.writeText(window.top?.location?.href||location.href); return toast('Share link copied','Current Stitch demo route copied.'); }
+    if(t.includes('audit logs') || t.includes('history')) return openPanel('Audit logs','Timeline inside the current Stitch screen.', '<div class="item"><b>14:22:01 · Webhook received</b><span>Zendesk sandbox intake.</span></div><div class="item"><b>14:22:04 · Knowledge fetched</b><span>Pinecone/RAG context resolved.</span></div><div class="item"><b>14:22:12 · Approval queued</b><span>Human-in-the-loop state pending.</span></div>');
+    if(t.includes('edit email') || t==='edit' || t.includes('edit_note')) return openModal('Edit draft output','Simulated editor for the generated response.', '<textarea rows="5">Hi Ava — your refund is eligible under Refund Policy v2.1. I can process the partial refund after confirmation.</textarea>');
+    if(t.includes('approve')){ toast('Approved','Draft approved locally in this demo session.'); [...document.querySelectorAll('*')].forEach(n=>{ if((n.textContent||'').trim().toUpperCase()==='PENDING') n.textContent='APPROVED'; }); return; }
+    if(t.includes('reject') || t.includes('block')) return toast('Rejected','The action was returned for human revision.');
+    if(t.includes('policy')) return openPanel('Policy citation','Citation preview without leaving the Stitch design.', '<div class="item"><b>Refund Policy v2.1</b><span>Partial refund allowed when eligibility window and account status match.</span></div>');
+    if(t.includes('prev')) return toast('Previous page','Pagination moved to previous demo set.');
+    if(t.includes('next')) return toast('Next page','Pagination moved to next demo set.');
   }, true);
-  toast('Interactive demo ready', 'Buttons, nav items and actions are now clickable in this Stitch export.');
+  toast('Interactive demo ready','All visible options are functional while preserving the Stitch screens.');
 })();
 </script>
 
