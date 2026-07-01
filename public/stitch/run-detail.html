@@ -406,15 +406,13 @@
     });
   </script>
 
-
-
 <style id="stitch-demo-interactions-style">
   .demo-toast-host { position: fixed; right: 24px; bottom: 24px; z-index: 99999; display: grid; gap: 10px; pointer-events: none; }
   .demo-toast { pointer-events: auto; max-width: 360px; border: 1px solid rgba(56,189,248,.35); background: rgba(2,6,23,.92); color: #e2e8f0; border-radius: 14px; padding: 12px 14px; box-shadow: 0 18px 50px rgba(0,0,0,.34); font: 600 12px Inter, system-ui, sans-serif; backdrop-filter: blur(14px); }
   .demo-toast b { display:block; color: #67e8f9; margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
   .demo-modal-backdrop { position: fixed; inset: 0; z-index: 99998; display: none; place-items: center; background: rgba(2,6,23,.58); backdrop-filter: blur(8px); }
   .demo-modal-backdrop.open { display: grid; }
-  .demo-modal { width: min(540px, calc(100vw - 32px)); border: 1px solid rgba(56,189,248,.32); background: #0f172a; color: #e2e8f0; border-radius: 18px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); font-family: Inter, system-ui, sans-serif; }
+  .demo-modal { width: min(520px, calc(100vw - 32px)); border: 1px solid rgba(56,189,248,.32); background: #0f172a; color: #e2e8f0; border-radius: 18px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); font-family: Inter, system-ui, sans-serif; }
   .demo-modal h3 { margin: 0 0 8px; font: 700 20px 'Space Grotesk', Inter, sans-serif; color: #f8fafc; }
   .demo-modal p { margin: 0 0 16px; color: #94a3b8; line-height: 1.55; font-size: 13px; }
   .demo-modal input, .demo-modal select, .demo-modal textarea { width: 100%; margin: 7px 0; border: 1px solid #334155; border-radius: 10px; background: #020617; color: #e2e8f0; padding: 10px 12px; font: 13px Inter, system-ui, sans-serif; }
@@ -424,42 +422,74 @@
   .demo-interactive-pulse { outline: 2px solid rgba(56,189,248,.45) !important; box-shadow: 0 0 0 6px rgba(56,189,248,.08) !important; transition: box-shadow .2s ease, outline .2s ease; }
 </style>
 
+
 <script id="stitch-demo-interactions-script">
 (() => {
-  const route = (path) => { if (window.top && window.top !== window) window.top.location.href = path; else window.location.href = path; };
-  const ROUTES = {
-    'dashboard': '/', 'templates': '/templates', 'trigger demo': '/trigger-demo', 'workflow runs': '/workflow-runs',
-    'pending approvals': '/pending-approvals', 'knowledge base': '/knowledge-base', 'settings': '/settings',
-    'documentation': '/documentation', 'support': '/support', 'audit logs': '/audit-logs'
+  const DEMO = 'OpsPilot AI';
+  const route = (path) => {
+    if (window.top && window.top !== window) window.top.location.href = path;
+    else window.location.href = path;
   };
-  const host = document.createElement('div'); host.className = 'demo-toast-host'; document.body.appendChild(host);
-  function toast(title, message) { const el = document.createElement('div'); el.className='demo-toast'; el.innerHTML=`<b>${title}</b><span>${message}</span>`; host.appendChild(el); setTimeout(()=>el.remove(), 3600); }
-  const modal = document.createElement('div'); modal.className='demo-modal-backdrop'; modal.innerHTML=`<div class="demo-modal" role="dialog" aria-modal="true"><h3></h3><p></p><div class="demo-fields"></div><div class="demo-modal-actions"><button data-demo-close>Cancel</button><button class="primary" data-demo-confirm>Save</button></div></div>`; document.body.appendChild(modal);
-  function openModal(title, text, fields='') { modal.querySelector('h3').textContent=title; modal.querySelector('p').textContent=text; modal.querySelector('.demo-fields').innerHTML=fields; modal.classList.add('open'); }
-  modal.addEventListener('click', e => { if(e.target===modal||e.target.matches('[data-demo-close]')) modal.classList.remove('open'); if(e.target.matches('[data-demo-confirm]')){ modal.classList.remove('open'); toast('Saved in demo','Local demo state updated safely.'); }});
-  function mark(el){el.classList.add('demo-interactive-pulse'); setTimeout(()=>el.classList.remove('demo-interactive-pulse'), 900)}
-  function textOf(el){return (el.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()}
-  async function api(type='refund') { try { const res=await fetch('/api/intake/demo',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type})}); const data=await res.json(); toast('Demo API completed', `${data.run?.workflow||'Workflow'} → ${data.run?.classification||data.run?.approval||'queued'}`); return data; } catch { toast('Demo API unavailable','The front-end interaction completed but API did not answer.'); return null; } }
-  function approve(){ toast('Approved', 'The selected item moved to approved in this demo session.'); [...document.querySelectorAll('*')].forEach(n=>{ if((n.textContent||'').trim().toUpperCase()==='PENDING') n.textContent='APPROVED'; }); }
-  function reject(){ toast('Rejected', 'The selected item was returned for human revision.'); }
-  document.addEventListener('click', async (event) => {
-    const el = event.target.closest('button,a,[role="button"],.demo-card'); if(!el) return; const t=textOf(el); mark(el); const href=el.getAttribute('href'); if(href==='#') event.preventDefault();
-    for (const [label,path] of Object.entries(ROUTES)) { if(t.includes(label)) { event.preventDefault(); route(path); return; } }
-    if(t.includes('new workflow')) return openModal('New workflow template','Create a demo-safe workflow following the OpsPilot pattern.','<input value="Customer escalation triage"/><select><option>RAG + human approval</option><option>Lead scoring</option><option>Document extraction</option></select>');
-    if(t.includes('trigger demo event')||t==='trigger'||t.includes('run refund')||t.includes('run lead')) { await api(t.includes('lead')?'lead':'refund'); setTimeout(()=>route('/run-detail'),350); return; }
-    if(t.includes('share')) { await navigator.clipboard?.writeText(window.top?.location?.href||location.href); return toast('Share link copied','Current demo route copied.'); }
-    if(t.includes('edit email')||t==='edit'||t.includes('edit_note')) return openModal('Edit AI output','Adjust the generated response before approval.','<textarea rows="5">Hi Ava — your refund is eligible under Refund Policy v2.1. I can process the partial refund after confirmation.</textarea>');
-    if(t.includes('approve')) return approve();
-    if(t.includes('reject')||t.includes('block')) return reject();
-    if(t.includes('policy')||t.includes('citation')) return toast('Citation opened','Refund Policy v2.1 citation preview selected.');
-    if(t.includes('prev')) return toast('Previous page','Moved to the previous run set.');
-    if(t.includes('next')) return toast('Next page','Moved to the next run set.');
-    if(t.includes('browse all')) return route('/templates');
-    if(t.includes('provider')||t.includes('webhook')||t.includes('guardrail')||t.includes('toggle')) return toast('Setting toggled','Demo-safe setting changed locally; no secrets stored.');
-    if(t.includes('download')) return toast('Downloaded','Demo evidence export generated locally.');
-    if(t.includes('hub')||t.includes('dns')||t.includes('notifications')||t.includes('internal')) return toast('Topbar opened','Workspace status panel toggled.');
+  const host = document.createElement('div');
+  host.className = 'demo-toast-host';
+  document.body.appendChild(host);
+  function toast(title, message) {
+    const el = document.createElement('div');
+    el.className = 'demo-toast';
+    el.innerHTML = `<b>${title}</b><span>${message}</span>`;
+    host.appendChild(el);
+    setTimeout(() => el.remove(), 3600);
+  }
+  const modal = document.createElement('div');
+  modal.className = 'demo-modal-backdrop';
+  modal.innerHTML = `<div class="demo-modal" role="dialog" aria-modal="true"><h3></h3><p></p><div class="demo-fields"></div><div class="demo-modal-actions"><button data-demo-close>Cancel</button><button class="primary" data-demo-confirm>Save</button></div></div>`;
+  document.body.appendChild(modal);
+  function openModal(title, text, fields = '') {
+    modal.querySelector('h3').textContent = title;
+    modal.querySelector('p').textContent = text;
+    modal.querySelector('.demo-fields').innerHTML = fields;
+    modal.classList.add('open');
+  }
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal || event.target.matches('[data-demo-close]')) modal.classList.remove('open');
+    if (event.target.matches('[data-demo-confirm]')) { modal.classList.remove('open'); toast('Saved in demo', 'The portfolio shell updated this item locally for the demo session.'); }
+  });
+  function mark(el) { el.classList.add('demo-interactive-pulse'); setTimeout(() => el.classList.remove('demo-interactive-pulse'), 900); }
+  function textOf(el) { return (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+  async function triggerApi(type='refund') {
+    try {
+      const res = await fetch('/api/intake/demo', { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({ type }) });
+      const data = await res.json();
+      toast('Demo event triggered', `${data.run?.workflow || 'Workflow'} → ${data.run?.classification || 'queued'}`);
+    } catch (err) { toast('Demo API unavailable', 'The visual action still works; API call did not complete.'); }
+  }
+  document.addEventListener('click', (event) => {
+    const el = event.target.closest('button,a');
+    if (!el) return;
+    const t = textOf(el);
+    const href = el.getAttribute('href');
+    if (href === '#') event.preventDefault();
+    mark(el);
+    if (t.includes('dashboard')) return route('/');
+    if (t.includes('workflow runs') || t.includes('trigger demo') || t.includes('trigger demo event')) { event.preventDefault(); triggerApi('refund'); setTimeout(() => route('/run-detail'), 350); return; }
+    if (t.includes('pending approvals') || t.includes('knowledge base')) return route('/approvals-kb');
+    if (t.includes('templates') || t.includes('browse all')) { toast('Templates opened', 'Refund triage, lead qualification, policy Q&A and extraction templates are available in this demo.'); return; }
+    if (t.includes('new workflow')) { openModal('New workflow template', 'Create a demo workflow without leaving the Stitch design.', '<input value="Customer escalation triage"/><select><option>RAG + approval</option><option>Lead scoring</option><option>Document extraction</option></select>'); return; }
+    if (t.includes('documentation')) { toast('Documentation', 'Demo docs are represented in the Knowledge Base screen and README.'); return; }
+    if (t.includes('support')) { toast('Support handoff', 'A mock support handoff was queued for human review.'); return; }
+    if (t.includes('share')) { navigator.clipboard?.writeText(window.top?.location?.href || location.href); toast('Share link copied', 'The current demo route was copied to clipboard.'); return; }
+    if (t.includes('audit logs') || t.includes('history')) { toast('Audit logs opened', 'Webhook intake, retrieval, reasoning and approval events are visible in the run timeline.'); return; }
+    if (t.includes('edit email') || t === 'edit' || t.includes('edit_note')) { openModal('Edit draft output', 'This modal simulates editing the AI-generated response before approval.', '<textarea rows="5">Hi Ava — your refund is eligible under Refund Policy v2.1. I can process the partial refund after your confirmation.</textarea>'); return; }
+    if (t.includes('approve')) { toast('Approved', 'The drafted response moved from pending approval to approved in this demo session.'); document.querySelectorAll('*').forEach(n => { if ((n.textContent||'').trim() === 'PENDING') n.textContent = 'APPROVED'; }); return; }
+    if (t.includes('reject') || t.includes('block')) { toast('Rejected', 'The workflow was marked rejected for human revision.'); return; }
+    if (t.includes('policy')) { toast('Policy citation opened', 'Refund Policy v2.1 citation preview selected.'); return; }
+    if (t.includes('prev')) { toast('Previous page', 'Demo pagination moved to the previous run set.'); return; }
+    if (t.includes('next')) { toast('Next page', 'Demo pagination moved to the next run set.'); return; }
+    if (t.includes('hub') || t.includes('dns') || t.includes('notifications') || t.includes('internal')) { toast('Topbar action', 'Workspace status panel toggled for the demo.'); return; }
+    if (t.includes('settings')) { openModal('Workspace settings', 'Settings are demo-safe and do not store secrets.', '<input value="Northstar Ops Workspace"/><select><option>Internal demo mode</option></select>'); return; }
   }, true);
-  toast('Interactive demo ready','Every visible navigation option and action is wired in this portfolio demo.');
+  toast('Interactive demo ready', 'Buttons, nav items and actions are now clickable in this Stitch export.');
 })();
 </script>
+
 </body></html>
