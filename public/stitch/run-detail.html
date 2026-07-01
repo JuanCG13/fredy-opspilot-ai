@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OpsPilot AI - Workflow Run Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              950: '#020617',
+              900: '#0f172a',
+              800: '#1e293b',
+              400: '#94a3b8',
+              500: '#64748b',
+              50: '#f8fafc',
+              200: '#e2e8f0',
+            },
+            cyan: {
+              400: '#22d3ee',
+              500: '#06b6d4',
+              900: '#164e63',
+            },
+            emerald: {
+              500: '#10b981',
+              600: '#059669',
+            }
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "1rem",
+            "xl": "1.5rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk"],
+            display: ["Space Grotesk"],
+            body: ["Inter"],
+            label: ["Inter"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 10px;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    @keyframes pulse-cyan {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .animate-pulse-cyan {
+      animation: pulse-cyan 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 font-body antialiased">
+<!-- SideNavBar -->
+<aside class="flex flex-col fixed left-0 top-0 h-full h-screen w-64 border-r border-slate-800 bg-slate-950 z-50">
+<div class="p-6">
+<div class="font-headline text-xl font-bold text-slate-50 tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-cyan-500" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+        OpsPilot AI
+      </div>
+<div class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-semibold">Northstar Ops Demo</div>
+</div>
+<div class="px-4 mb-4">
+<button class="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold py-2.5 px-4 rounded flex items-center justify-center gap-2 transition-all active:scale-95 duration-150">
+<span class="material-symbols-outlined text-sm">add</span>
+        New Workflow
+      </button>
+</div>
+<nav class="flex-1 px-3 space-y-1 custom-scrollbar overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body text-label text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-colors" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-body text-label text-sm">Templates</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-colors" href="#">
+<span class="material-symbols-outlined">bolt</span>
+<span class="font-body text-label text-sm">Trigger Demo</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded bg-slate-900 text-cyan-400 border-r-2 border-cyan-500" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-body text-label text-sm font-medium">Workflow Runs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-colors" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="font-body text-label text-sm">Pending Approvals</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-body text-label text-sm">Knowledge Base</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body text-label text-sm">Settings</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-800">
+<div class="flex items-center gap-3 px-2 py-3 rounded-lg bg-slate-900/40">
+<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
+<img class="w-full h-full rounded-full object-cover" data-alt="A professional high-resolution headshot of an administrative professional in a modern office environment. Soft cinematic lighting with blue and grey tones to match the enterprise dark mode aesthetic. The background is slightly blurred showing a futuristic workspace with monitors and ambient lighting." src="/stitch/assets/5072e7f045e58692.png"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold text-slate-200 truncate">OpsPilot Admin</p>
+<p class="text-[10px] text-slate-500 truncate">Admin Access</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopAppBar -->
+<header class="flex items-center justify-between px-8 ml-64 w-[calc(100%-16rem)] bg-slate-950/80 backdrop-blur-md h-16 border-b border-slate-800 fixed top-0 right-0 z-40">
+<div class="flex items-center gap-4">
+<nav class="flex gap-4">
+<span class="text-slate-500 font-medium font-body text-sm">Workspaces</span>
+<span class="text-slate-400">/</span>
+<span class="text-slate-50 font-medium font-body text-sm">Northstar Ops Workspace</span>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-slate-500">
+<span class="material-symbols-outlined hover:text-slate-200 cursor-pointer">hub</span>
+<span class="material-symbols-outlined hover:text-slate-200 cursor-pointer">dns</span>
+<div class="relative">
+<span class="material-symbols-outlined hover:text-slate-200 cursor-pointer">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-cyan-500 rounded-full border-2 border-slate-950"></span>
+</div>
+</div>
+<div class="h-6 w-px bg-slate-800"></div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Demo Mode</span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 mt-16 p-8 min-h-screen bg-slate-950">
+<!-- Page Header & Status -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h1 class="text-2xl font-bold font-headline text-slate-50">Workflow Run Detail</h1>
+<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 text-xs font-bold border border-amber-500/20 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+            Pending Approval
+          </span>
+</div>
+<p class="text-slate-400 text-sm">ID: <span class="font-mono text-cyan-400">WR-7742</span> • Triggered 14 minutes ago by Customer Support Webhook</p>
+</div>
+<div class="flex gap-2">
+<button class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">share</span>
+          Share
+        </button>
+<button class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">history</span>
+          Audit Logs
+        </button>
+</div>
+</div>
+<!-- Bento Grid Content -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Left Column: Context & Knowledge -->
+<div class="col-span-12 lg:col-span-8 space-y-6">
+<!-- Section 1: Original Intake -->
+<div class="glass-card rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cyan-500">input</span>
+<h2 class="font-headline font-semibold text-slate-100 uppercase tracking-tight text-sm">Original Intake</h2>
+</div>
+<span class="text-[10px] text-slate-500 uppercase font-mono">Source: Zendesk API</span>
+</div>
+<div class="bg-slate-900/50 rounded-lg border border-slate-800 p-4 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto">
+<pre>{
+  "customer": {
+    "name": "Alex Chen",
+    "id": "USR-88219",
+    "plan": "Pro",
+    "tenure": "14 months"
+  },
+  "request": {
+    "type": "Refund",
+    "timestamp": "2023-10-24T14:22:01Z",
+    "message": "I'm looking for a refund for this month. I've had some major technical issues syncing my CRM since the last update. I know I'm slightly past the 2 week window (day 19) but I haven't been able to use the service at all."
+  }
+}</pre>
+</div>
+</div>
+<!-- Section 2: Knowledge Retrieval (RAG) -->
+<div class="glass-card rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-violet-400">library_books</span>
+<h2 class="font-headline font-semibold text-slate-100 uppercase tracking-tight text-sm">Knowledge Retrieval (RAG)</h2>
+</div>
+<div class="flex gap-2">
+<span class="text-[10px] bg-violet-900/20 text-violet-400 border border-violet-900/30 px-2 py-0.5 rounded">3 Sources Found</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="p-4 rounded-lg bg-slate-900/30 border-l-4 border-violet-500/50 hover:bg-slate-900/50 transition-colors">
+<div class="flex justify-between mb-2">
+<span class="text-[10px] font-bold text-violet-400 uppercase">Refund Policy v2.1</span>
+<span class="text-[10px] text-slate-500">Match Confidence: 98%</span>
+</div>
+<p class="text-sm text-slate-300 italic">"...The standard window for full refunds is restricted to 14 days from the billing cycle commencement for all tiers..."</p>
+<div class="mt-2 text-[10px] text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">link</span>
+                Section 4.2: Standard Window
+              </div>
+</div>
+<div class="p-4 rounded-lg bg-slate-900/30 border-l-4 border-emerald-500/50 hover:bg-slate-900/50 transition-colors">
+<div class="flex justify-between mb-2">
+<span class="text-[10px] font-bold text-emerald-400 uppercase">Tier-Specific Exceptions</span>
+<span class="text-[10px] text-slate-500">Match Confidence: 84%</span>
+</div>
+<p class="text-sm text-slate-300">"...Pro plan holders are eligible for prorated exceptions beyond the standard window in cases of documented technical unavailability..."</p>
+<div class="mt-2 text-[10px] text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">link</span>
+                Section 9.1: Pro/Enterprise Latitude
+              </div>
+</div>
+</div>
+</div>
+<!-- Section 3 & 4: Analysis & Draft -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Section 3: AI Analysis -->
+<div class="glass-card rounded-xl p-6 border-cyan-500/20">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-cyan-400">psychology</span>
+<h2 class="font-headline font-semibold text-slate-100 uppercase tracking-tight text-sm">AI Analysis</h2>
+</div>
+<div class="mb-4">
+<div class="text-[10px] text-slate-500 uppercase mb-1">Classification</div>
+<div class="text-cyan-400 font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                Partial Refund Eligible
+              </div>
+</div>
+<div>
+<div class="text-[10px] text-slate-500 uppercase mb-1">Reasoning Summary</div>
+<p class="text-sm text-slate-300 leading-relaxed">
+                Request is outside the standard 14-day window (Day 19) but Pro plan allows for manager-level prorated exceptions for technical issues cited in intake. Recommendation is a 50% partial refund for the current month.
+              </p>
+</div>
+</div>
+<!-- Section 4: Drafted Action -->
+<div class="glass-card rounded-xl p-6 border-slate-700">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-slate-400">drafts</span>
+<h2 class="font-headline font-semibold text-slate-100 uppercase tracking-tight text-sm">Drafted Email</h2>
+</div>
+<div class="bg-slate-950 rounded p-4 text-sm text-slate-400 h-32 overflow-y-auto custom-scrollbar">
+<p class="mb-2 font-semibold text-slate-300">Subject: Update regarding your refund request</p>
+              Hi Alex, thank you for reaching out. We're sorry to hear about the CRM sync issues you've experienced. While our standard window is 14 days, as a Pro member experiencing technical issues, we've approved a prorated 50% refund...
+            </div>
+<div class="mt-4 flex justify-end">
+<button class="text-cyan-500 text-xs font-semibold flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-sm">edit</span>
+                Edit Email Template
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Human-in-the-Loop & Audit -->
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<!-- Section 5: Human-in-the-Loop Decision -->
+<div class="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-xl relative overflow-hidden">
+<!-- Subtle Glow Effect -->
+<div class="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 blur-3xl rounded-full -mr-12 -mt-12"></div>
+<h2 class="font-headline font-semibold text-slate-100 uppercase tracking-tight text-sm mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-500" style="font-variation-settings: 'FILL' 1;">person_search</span>
+            Review Required
+          </h2>
+<div class="mb-6">
+<label class="block text-[10px] text-slate-500 uppercase font-bold mb-2">Internal Comments</label>
+<textarea class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all" placeholder="Add notes for the audit trail..." rows="4"></textarea>
+</div>
+<div class="grid grid-cols-1 gap-3">
+<button class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
+<span class="material-symbols-outlined">verified</span>
+              Approve &amp; Send
+            </button>
+<div class="grid grid-cols-2 gap-3">
+<button class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 border border-slate-700">
+<span class="material-symbols-outlined text-sm">edit_note</span>
+                Edit
+              </button>
+<button class="bg-slate-800 hover:bg-red-900/20 text-slate-400 hover:text-red-400 font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 border border-slate-700 hover:border-red-900/50">
+<span class="material-symbols-outlined text-sm">block</span>
+                Reject
+              </button>
+</div>
+</div>
+</div>
+<!-- Section 6: Audit & Technicals -->
+<div class="glass-card rounded-xl p-6">
+<h2 class="font-headline font-semibold text-slate-100 uppercase tracking-tight text-sm mb-6">Run Technicals</h2>
+<!-- Metrics -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
+<div class="text-[10px] text-slate-500 uppercase mb-1">Token Usage</div>
+<div class="text-xl font-bold font-headline text-slate-200">2,140</div>
+<div class="text-[10px] text-cyan-500">~84% context</div>
+</div>
+<div class="p-3 rounded-lg bg-slate-900/50 border border-slate-800">
+<div class="text-[10px] text-slate-500 uppercase mb-1">Est. Cost</div>
+<div class="text-xl font-bold font-headline text-slate-200">$0.04</div>
+<div class="text-[10px] text-emerald-500">GPT-4-Turbo</div>
+</div>
+</div>
+<!-- Vertical Timeline -->
+<div>
+<h3 class="text-[10px] text-slate-500 uppercase font-bold mb-4 tracking-widest">Execution Timeline</h3>
+<div class="space-y-6 relative before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-slate-800">
+<!-- Event 1 -->
+<div class="relative pl-8">
+<span class="absolute left-0 top-0 w-[22px] h-[22px] bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center z-10 border border-emerald-500/50">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+</span>
+<div>
+<p class="text-xs font-bold text-slate-200">Triggered</p>
+<p class="text-[10px] text-slate-500">14:22:01 • Zendesk Webhook</p>
+</div>
+</div>
+<!-- Event 2 -->
+<div class="relative pl-8">
+<span class="absolute left-0 top-0 w-[22px] h-[22px] bg-cyan-500/20 text-cyan-500 rounded-full flex items-center justify-center z-10 border border-cyan-500/50">
+<span class="material-symbols-outlined text-[14px]">search</span>
+</span>
+<div>
+<p class="text-xs font-bold text-slate-200">Knowledge Fetched</p>
+<p class="text-[10px] text-slate-500">14:22:04 • Pinecone RAG Index</p>
+</div>
+</div>
+<!-- Event 3 -->
+<div class="relative pl-8">
+<span class="absolute left-0 top-0 w-[22px] h-[22px] bg-cyan-500/20 text-cyan-500 rounded-full flex items-center justify-center z-10 border border-cyan-500/50">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+</span>
+<div>
+<p class="text-xs font-bold text-slate-200">LLM Reasoning</p>
+<p class="text-[10px] text-slate-500">14:22:09 • Inference Complete</p>
+</div>
+</div>
+<!-- Event 4 -->
+<div class="relative pl-8">
+<span class="absolute left-0 top-0 w-[22px] h-[22px] bg-cyan-500/20 text-cyan-500 rounded-full flex items-center justify-center z-10 border border-cyan-500/50">
+<span class="material-symbols-outlined text-[14px]">edit_square</span>
+</span>
+<div>
+<p class="text-xs font-bold text-slate-200">Drafted</p>
+<p class="text-[10px] text-slate-500">14:22:12 • Action Created</p>
+</div>
+</div>
+<!-- Event 5 -->
+<div class="relative pl-8">
+<span class="absolute left-0 top-0 w-[22px] h-[22px] bg-slate-800 text-slate-500 rounded-full flex items-center justify-center z-10 border border-slate-700 animate-pulse-cyan">
+<span class="material-symbols-outlined text-[14px]">hourglass_empty</span>
+</span>
+<div>
+<p class="text-xs font-bold text-slate-300">Awaiting Approval</p>
+<p class="text-[10px] text-slate-500">Current State • User: Admin</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+    // Micro-interaction for buttons
+    document.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('mousedown', () => btn.classList.add('scale-95'));
+      btn.addEventListener('mouseup', () => btn.classList.remove('scale-95'));
+      btn.addEventListener('mouseleave', () => btn.classList.remove('scale-95'));
+    });
+  </script>
+</body></html>
